@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ur" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pak Real Ludo - Live</title>
+    <script src="https://cdn.pubnub.com/sdk/javascript/pubnub.7.2.2.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #071e3d;
+            --card-bg: #1f4068;
+            --accent-color: #00b4d8;
+            --action-color: #e94560;
+            --text-color: #ffffff;
+        }
+        body {
+            margin: 0; padding: 0; background-color: var(--bg-color);
+            color: var(--text-color); font-family: Arial, sans-serif; text-align: center;
+        }
+        .screen { display: none; padding: 20px; max-width: 500px; margin: auto; }
+        .active { display: block; }
+        .logo { font-size: 36px; font-weight: bold; color: var(--accent-color); margin-top: 30px; }
+        .input-field {
+            width: 90%; background-color: var(--card-bg); color: white;
+            border: none; padding: 15px; border-radius: 10px; margin-bottom: 15px;
+            font-size: 16px; text-align: right;
+        }
+        .btn {
+            width: 95%; background-color: var(--accent-color); color: white;
+            border: none; padding: 15px; border-radius: 10px; font-size: 18px;
+            font-weight: bold; cursor: pointer; margin-top: 10px;
+        }
+        .btn-action { background-color: var(--action-color); }
+        .card { background-color: var(--card-bg); padding: 15px; border-radius: 15px; margin-bottom: 20px; text-align: right; }
+        .grid { display: flex; flex-wrap: wrap; justify-content: space-between; }
+        .grid-item {
+            width: 45%; background-color: #162447; padding: 15px;
+            border-radius: 12px; margin-bottom: 15px; cursor: pointer; font-weight: bold;
+        }
+        /* لڈو بورڈ کا کسٹم ڈیزائن */
+        .board { width: 300px; height: 300px; background: white; margin: 20px auto; border-radius: 10px; overflow: hidden; position: relative; }
+        .row { display: flex; justify-content: space-between; height: 40%; }
+        .box { width: 40%; height: 100%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
+        .center { position: absolute; top: 40%; left: 40%; width: 20%; height: 20%; background: #071e3d; display: flex; align-items: center; justify-content: center; }
+        /* چیاٹ بلبلہ */
+        #chatBubble { display: none; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); background: #00b4d8; padding: 10px 20px; border-radius: 20px; font-weight: bold; z-index: 100; }
+    </style>
+</head>
+<body>
+
+    <div id="loginScreen" class="screen active">
+        <div class="logo">Pak Real Ludo</div>
+        <p>لاگ ان کریں اور آن لائن کمائیں</p>
+        <input type="text" id="loginEmail" class="input-field" placeholder="ای میل یا موبائل نمبر">
+        <input type="password" id="loginPass" class="input-field" placeholder="پاس ورڈ">
+        <button class="btn" onclick="authLogin()">لاگ ان کریں</button>
+    </div>
+
+    <div id="dashboardScreen" class="screen">
+        <div class="card" style="display: flex; justify-content: space-between; align-items: center;">
+            <span style="font-size: 20px; font-weight: bold;">ڈیش بورڈ</span>
+            <div><small style="color: #aaa;">بیلنس: </small><span id="userBalance" style="color: gold; font-weight: bold;">Rs 100</span></div>
+        </div>
+        
+        <button class="btn btn-action" style="margin-bottom: 15px; font-size: 20px;" onclick="startMatchmaking()">🎲 آن لائن پلیئر کے ساتھ کھیلیں</button>
+        
+        <div class="grid">
+            <div class="grid-item" onclick="goToScreen('walletScreen')">💰 وائلٹ / جمع رقم</div>
+            <div class="grid-item" onclick="alert('لنک کاپی ہو گیا! دوستوں کو بھیجیں اور ۵۰ روپے پائیں')">🎁 ریفرل بونس</div>
+        </div>
+        <button id="adminBtn" class="btn" style="background-color: purple; display: none;" onclick="goToScreen('adminScreen')">👑 آفیشل ایڈمن پینل</button>
+    </div>
+
+    <div id="loadingScreen" class="screen">
+        <div class="logo">Pak Real Ludo</div>
+        <h2 style="margin-top: 50px;">⏳ کھلاڑی کی تلاش جاری ہے...</h2>
+        <p>سرور دوسرے آن لائن پلیئر کو آپ کے میچ میں جوڑ رہا ہے۔</p>
+        <div style="font-size: 40px; margin: 20px;">🎲...🎲...🎲</div>
+        <button class="btn" style="background-color: grey;" onclick="cancelMatchmaking()">کینسل کریں</button>
+    </div>
+
+    <div id="gameScreen" class="screen">
+        <div id="chatBubble">😂</div>
+        <div class="card" style="text-align: center;">
+            <h3 id="turnStatus">میچ شروع ہو گیا ہے!</h3>
+            <h1 id="diceDisplay" style="font-size: 60px; margin: 15px 0;">🎲</h1>
+            <button id="rollButton" class="btn btn-action" onclick="playerRollDice()">گٹی رول کریں</button>
+        </div>
+
+        <div class="board">
+            <div class="row">
+                <div class="box" style="background: #dc3545;">Red</div>
+                <div class="box" style="background: #007bff;">Blue</div>
+            </div>
+            <div class="center">👑</div>
+            <div class="row">
+                <div class="box" style="background: #ffc107;">Yellow</div>
+                <div class="box" style="background: #28a745;">Green</div>
+            </div>
+        </div>
+
+        <div class="card" style="text-align: center;">
+            <p style="margin: 0 0 10px 0; font-size: 12px; color: #aaa;">مخالف کھلاڑی کو چڑچڑا کریں 👇</p>
+            <span style="font-size: 30px; cursor: pointer; margin: 0 10px;" onclick="sendEmoji('😂')">😂</span>
+            <span style="font-size: 30px; cursor: pointer; margin: 0 10px;" onclick="sendEmoji('😡')">😡</span>
+            <span style="font-size: 30px; cursor: pointer; margin: 0 10px;" onclick="sendEmoji('🤪')">🤪</span>
+            <span style="font-size: 30px; cursor: pointer; margin: 0 10px;" onclick="sendEmoji('🤫')">🤫</span>
+        </div>
+    </div>
+
+    <div id="walletScreen" class="screen">
+        <h2>وائلٹ اور ڈپازٹ</h2>
+        <div class="card" style="text-align: center; border: 1px solid var(--accent-color);">
+            <p>👇 اس نمبر پر ایزی پیسہ کریں 👇</p>
+            <h1 style="color: var(--action-color); margin: 5px 0;">03431289824</h1>
+            <small>نام: بختار مری</small>
+        </div>
+        <input type="number" id="depAmount" class="input-field" placeholder="رقم لکھیں (کم سے کم 100)">
+        <input type="text" id="depTxid" class="input-field" placeholder="ٹرانزیکشن آئی ڈی (TxID)">
+        <button class="btn btn-action" onclick="submitDeposit()">درخواست بھیجیں</button>
+        <button class="btn" style="background-color: grey;" onclick="goToScreen('dashboardScreen')">واپس</button>
+    </div>
+
+    <div id="adminScreen" class="screen">
+        <h2 style="color: var(--action-color);">👑 آفیشل ایڈمن پینل</h2>
+        <div class="card"><h3>کل جمع رقم: Rs <span id="adminTotal">25000</span></h3></div>
+        <h3>📥 پینڈنگ درخواستیں</h3>
+        <div id="requestList"></div>
+        <button class="btn" style="background-color: grey;" onclick="goToScreen('dashboardScreen')">واپس ڈیش بورڈ</button>
+    </div>
+
+    <script>
+        // پبلک فری سرور کی چابیاں جو آٹو میچ میکنگ چلائیں گی
+        const pubnub = new PubNub({
+            publishKey: 'pub-c-695029e0-82a9-46c5-9273-0db8b209e73b', 
+            subscribeKey: 'sub-c-4e7894bc-2e97-4b95-a40d-d426543b591d',
+            userId: "User_" + Math.floor(Math.random() * 1000)
+        });
+
+        let myRole = ""; 
+        let gameChannel = "ludo_global_match";
+        let balance = 100;
+        let pendingRequests = [{ id: 1, name: 'علی مری', amount: 500, txId: 'TXN9921' }];
+
+        function goToScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function authLogin() {
+            let email = document.getElementById('loginEmail').value;
+            let pass = document.getElementById('loginPass').value;
+            if(email === 'bakhtyarmarri2@gmail.com' && pass === 'Marri@123') {
+                document.getElementById('adminBtn').style.display = 'block';
+                goToScreen('dashboardScreen');
+            } else if(email !== "" && pass !== "") {
+                goToScreen('dashboardScreen');
+            } else { alert('صحیح معلومات درج کریں'); }
+        }
+
+        // آٹو میچ میکنگ شروع کرنے کا فنکشن
+        function startMatchmaking() {
+            goToScreen('loadingScreen');
+            pubnub.subscribe({ channels: [gameChannel] });
+
+            // سرور کو سگنل بھیجنا کہ میں کھیلنے کے لیے تیار ہوں
+            setTimeout(() => {
+                pubnub.publish({
+                    channel: gameChannel,
+                    message: { action: "SEARCH_PLAYER", userId: pubnub.getUserId() }
+                });
+            }, 1500);
+        }
+
+        // لائیو سگنلز سننا (جب دوسرا پلیئر کلک کرے گا)
+        pubnub.addListener({
+            message: function(event) {
+                let msg = event.message;
+                
+                if (msg.action === "SEARCH_PLAYER" && msg.userId !== pubnub.getUserId()) {
+                    // میچ مل گیا! ایک پلیئر Red بنے گا، دوسرا Blue
+                    myRole = "PLAYER_1";
+                    pubnub.publish({ channel: gameChannel, message: { action: "START_MATCH" } });
+                }
+                
+                if (msg.action === "START_MATCH") {
+                    if(myRole === "") { myRole = "PLAYER_2"; }
+                    goToScreen('gameScreen');
+                    setupMatchInfo();
+                }
+
+                if (msg.action === "DICE_ROLLED") {
+                    document.getElementById('diceDisplay').innerText = msg.number;
+                    if(msg.by !== myRole) {
+                        document.getElementById('turnStatus').innerText = "آپ کی باری ہے! 🎲";
+                        document.getElementById('rollButton').disabled = false;
+                    }
+                }
+
+                if (msg.action === "EMOJI") {
+                    let bubble = document.getElementById('chatBubble');
+                    bubble.innerText = msg.icon;
+                    bubble.style.display = "block";
+                    setTimeout(() => { bubble.style.display = "none"; }, 2000);
+                }
+            }
+        });
+
+        function setupMatchInfo() {
+            if(myRole === "PLAYER_1") {
+                document.getElementById('turnStatus').innerText = "آپ کی باری ہے (Red)";
+                document.getElementById('rollButton').disabled = false;
+            } else {
+                document.getElementById('turnStatus').innerText = "مخالف کی باری ہے (Blue)...";
+                document.getElementById('rollButton').disabled = true;
+            }
+        }
+
+        function playerRollDice() {
+            let num = Math.floor(Math.random() * 6) + 1;
+            document.getElementById('diceDisplay').innerText = num;
+            document.getElementById('rollButton').disabled = true;
+            document.getElementById('turnStatus').innerText = "مخالف کی باری ہے...";
+
+            pubnub.publish({
+                channel: gameChannel,
+                message: { action: "DICE_ROLLED", number: num, by: myRole }
+            });
+        }
+
+        function sendEmoji(emojiIcon) {
+            pubnub.publish({
+                channel: gameChannel,
+                message: { action: "EMOJI", icon: emojiIcon }
+            });
+        }
+
+        function cancelMatchmaking() {
+            pubnub.unsubscribe({ channels: [gameChannel] });
+            goToScreen('dashboardScreen');
+        }
+
+        function submitDeposit() {
+            let amt = document.getElementById('depAmount').value;
+            let tx = document.getElementById('depTxid').value;
+            if(amt >= 100 && tx !== '') {
+                pendingRequests.push({ id: Date.now(), name: 'نیا کھلاڑی', amount: parseInt(amt), txId: tx });
+                alert('درخواست بھیج دی گئی!');
+                goToScreen('dashboardScreen');
+            }
+        }
+    </script>
+</body>
+  </html>
+  
