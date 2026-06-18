@@ -2,17 +2,24 @@ import React, { useState } from 'react';
 import { StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 
 export default function LoginScreen({ navigation }) {
-  const [phone, setPhone] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
   const [password, setPassword] = useState('');
 
   const handleLogin = () => {
-    // یہاں ہم بعد میں فائربیس (Firebase) کا لاگ ان لاجک جوڑیں گے
-    if (phone === '03001234567' && password === 'admin123') {
-      // اگر یہ نمبر اور پاس ورڈ ہو تو سیدھا ایڈمن پینل یا ڈیش بورڈ پر لے جائیں
-      alert('ایڈمن لاگ ان کامیاب!');
-    } else {
-      alert('لاگ ان کی درخواست بھیج دی گئی ہے!');
+    // ایڈمن لاگ ان کی سخت چیکنگ (جو آپ نے فراہم کی)
+    if (emailOrPhone.trim() === 'bakhtyarmarri2@gmail.com' && password === 'Marri@123') {
+      alert('خوش آمدید ایڈمن! آپ ایڈمن پینل میں داخل ہو رہے ہیں۔');
+      // یہاں سے ہم بعد میں ایڈمن پینل اسکرین پر بھیجیں گے
+      navigation.navigate('Dashboard'); 
+      return;
+    }
+
+    // عام یوزر کے لیے لاگ ان (بعد میں فائربیس سے جڑے گا)
+    if (emailOrPhone !== '' && password !== '') {
+      alert('لاگ ان کامیاب!');
       navigation.navigate('Dashboard');
+    } else {
+      alert('براہ کرم تمام خانے پُر کریں۔');
     }
   };
 
@@ -22,14 +29,14 @@ export default function LoginScreen({ navigation }) {
       <Text style={styles.subTitle}>لاگ ان کریں اور کھیلنا شروع کریں</Text>
 
       <View style={styles.inputContainer}>
-        {/* موبائل نمبر */}
+        {/* ای میل یا موبائل نمبر */}
         <TextInput 
           style={styles.input} 
-          placeholder="موبائل نمبر لکھیں" 
+          placeholder="ای میل یا موبائل نمبر لکھیں" 
           placeholderTextColor="#aaa"
-          keyboardType="phone-pad"
-          value={phone}
-          onChangeText={setPhone}
+          value={emailOrPhone}
+          onChangeText={setEmailOrPhone}
+          autoCapitalize="none"
         />
 
         {/* پاس ورڈ */}
@@ -59,7 +66,7 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    backgroundColor: '#071e3d', // وہی خوبصورت گیمنگ تھیم والا گہرا نیلا رنگ
+    backgroundColor: '#071e3d',
     alignItems: 'center',
     justifyContent: 'center',
     padding: 20,
@@ -91,7 +98,7 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '100%',
-    backgroundColor: '#00b4d8', // لاگ ان کے لیے چمکدار نیلا بٹن
+    backgroundColor: '#00b4d8',
     padding: 15,
     borderRadius: 10,
     alignItems: 'center',
@@ -107,7 +114,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   linkText: {
-    color: '#e94560', // ہائی لائٹ کرنے کے لیے سرخ رنگ کا لنک
+    color: '#e94560',
     fontSize: 14,
   },
 });
